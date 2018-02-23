@@ -8,7 +8,8 @@ import pandas as pd
 import  seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.finance as mpf
-
+from scipy import stats
+from  collections import namedtuple
 
 
 sns.set_context(rc= {'figure.figsize': (14,7)})
@@ -48,13 +49,13 @@ tsla_part_df = tsla_df[:30]
 fig, ax = plt.subplots(figsize=(14,7))
 qutotes = []
 
-for index, (d,o,c,h,l) in enumerate(zip(tsla_part_df.index, tsla_part_df.open,tsla_part_df.close,tsla_part_df.high,tsla_part_df.low)):
-    d = mpf.date2num(d)
-    val = (d,o,c,h,l)
-    qutotes.append(val)
-
-mpf.candlestick_ochl(ax, qutotes, width=0.6, colorup=__colorup__,
-                     colordown=__colordown__)
+# for index, (d,o,c,h,l) in enumerate(zip(tsla_part_df.index, tsla_part_df.open,tsla_part_df.close,tsla_part_df.high,tsla_part_df.low)):
+#     d = mpf.date2num(d)
+#     val = (d,o,c,h,l)
+#     qutotes.append(val)
+#
+# mpf.candlestick_ochl(ax, qutotes, width=0.6, colorup=__colorup__,
+#                      colordown=__colordown__)
 # ax.autoscale_view()
 # ax.xaxis_date()
 
@@ -85,7 +86,45 @@ def plot_trade(buy_date,sell_date):
     plt.fill_between(tsla_df.index[start:end],0,tsla_df['close'][start:end],color='green', alpha = 0.38)
     plt.ylim(np.min(tsla_df['close'])-5, np.max(tsla_df['close'])+5)
     plt.legend(['close'],loc='best')
-    plt.show()
 
 
-plot_trade('2017-12-20', '2018-02-01')
+#how to calculate golden line
+cs_max = tsla_df.close.max()
+cs_min = tsla_df.close.min()
+
+sp382 = (cs_max-cs_min)*0.382 +cs_min
+sp618 = (cs_max-cs_min)*0.618 +cs_min
+
+
+
+sp382_stats = stats.scoreatpercentile(tsla_df.close,38.2)
+sp618_stats = stats.scoreatpercentile(tsla_df.close, 61.8)
+
+print(sp618_stats)
+
+
+def plot_golden():
+    above618 = np.maximum(sp618,sp618_stats)
+    below618 = np.minimum(sp618,sp618_stats)
+    above382 = np.maximum(sp382,sp382_stats)
+    below382 = np.minimum(sp382,sp382_stats)
+
+    #plot close price
+
+    plt.plot(tsla_df.close)
+
+    plt.axhline(sp382,c='r')
+    plt.axhline(sp382_stats, c='m')
+    plt.axhline(sp618,c='g')
+    plt.axhline(sp618_stats,c='k')
+
+
+    plt.fill_between(tsla_df.index,above618,below618, alpha=0.5, color ="r")
+    plt.fill_between(tsla_df.index,above382,below382, alpha=0.5, color="g")
+
+    return  namedtuple('golden', ['above618', 'below618','above382','below382'])(above618,below618,above382,below382)
+
+golden = plot_golden()
+plt.legend(['close','sp382', 'sp382_stats','sp618','sp618_stats'], loc='best')
+plt.show()
+
